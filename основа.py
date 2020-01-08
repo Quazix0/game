@@ -1,4 +1,6 @@
+import os
 import pygame
+import sys
 
 
 class Settings():
@@ -9,6 +11,22 @@ class Settings():
         self.height = 800
         self.fps = 60
         self.background_color = (230, 230, 230)
+
+
+def load_image(name, colorkey=None):
+    fullname = os.path.join('data', name)
+    try:
+        image = pygame.image.load(fullname)
+    except pygame.error as message:
+        print('Не могу загрузить изображение:', name)
+        raise SystemExit(message)
+    if colorkey is not None:
+        if colorkey == -1:
+            colorkey = image.get_at((0, 0))
+        image.set_colorkey(colorkey)
+    else:
+        image = image.convert_alpha()
+    return image
 
 
 pygame.init()
