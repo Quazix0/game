@@ -1,6 +1,5 @@
 import os
 import pygame
-import sys
 
 
 class Sprite(pygame.sprite.Sprite):
@@ -37,7 +36,6 @@ class Ship(Sprite):
 
 
 class Bullet(Sprite):
-    
 
     def __init__(self, screen, ship):
         super().__init__(bullets)
@@ -59,6 +57,18 @@ class Bullet(Sprite):
         pygame.draw.rect(self.screen, self.color, self.rect)
 
 
+class Ufo(Sprite):
+    '''летающая тарелка'''
+
+    def __init__(self, screen):
+        super().__init__(ufo_group)
+        self.image = load_image('ufo.png', -1)
+        self.rect = self.image.get_rect()
+        self.rect.x = self.rect.width
+        self.rect.y = self.rect.height
+        self.x = float(self.rect.x)
+
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     try:
@@ -78,13 +88,18 @@ def load_image(name, colorkey=None):
 pygame.init()
 width = 1000
 height = 600
+ufo_width = 50
 fps = 60
+space_left = width - 2 * ufo_width
+num_of_ufo = space_left / (2 * ufo_width)
 background_color = (230, 230, 230)
 screen = pygame.display.set_mode((width, height))
 screen.fill(background_color)
 ship_group = pygame.sprite.Group()
+ufo_group = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 ship = Ship(screen)
+ufo = Ufo(screen)
 pygame.display.set_caption('')
 running = True
 while running:
@@ -108,7 +123,11 @@ while running:
     for bullet in bullets.sprites():
         bullet.draw_bullet()
     ship_group.draw(screen)
+    ufo_group.draw(screen)
     ship.update()
     bullets.update()
+    for bullet in bullets.copy():
+        if bullet.rect.bottom <= 0:
+            bullets.remove(bullet)
     pygame.display.flip()
 pygame.quit()
