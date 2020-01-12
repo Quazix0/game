@@ -60,7 +60,7 @@ class Bullet(Sprite):
 class Ufo(Sprite):
     '''летающая тарелка'''
 
-    def __init__(self, screen):
+    def __init__(self):
         super().__init__(ufo_group)
         self.image = load_image('ufo.png', -1)
         self.rect = self.image.get_rect()
@@ -85,13 +85,24 @@ def load_image(name, colorkey=None):
     return image
 
 
+def create_fleet(screen, ufo_group):
+    space_left_x = width - 2 * ufo_width
+    num_of_ufo_x = int(space_left_x / (2 * ufo_width))
+    num_of_ufo_y = 6
+    for j in range(num_of_ufo_y):
+        for i in range(num_of_ufo_x):
+            ufo = Ufo()
+            ufo.x = ufo_width + 2 * ufo_width * i
+            ufo.rect.x = ufo.x
+            ufo.rect.y = ufo_height + 2.5 * ufo_height * j
+
+
 pygame.init()
 width = 1000
 height = 600
 ufo_width = 50
+ufo_height = 26
 fps = 60
-space_left = width - 2 * ufo_width
-num_of_ufo = space_left / (2 * ufo_width)
 background_color = (230, 230, 230)
 screen = pygame.display.set_mode((width, height))
 screen.fill(background_color)
@@ -99,7 +110,7 @@ ship_group = pygame.sprite.Group()
 ufo_group = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 ship = Ship(screen)
-ufo = Ufo(screen)
+create_fleet(screen, ufo_group)
 pygame.display.set_caption('')
 running = True
 while running:
@@ -113,7 +124,6 @@ while running:
                 ship.moving_left = True
             elif event.key == pygame.K_SPACE:
                 bullet = Bullet(screen, ship)
-                bullets.add(bullet)
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_RIGHT:
                 ship.moving_right = False
