@@ -1,6 +1,16 @@
 import os
 import pygame
 
+width = 1000
+height = 700
+ufo_width = 50
+ufo_height = 26
+ship_speed = 1
+bullet_speed = 2
+ufo_speed_x = 0.75
+ufo_speed_y = 10
+direction = 1
+
 
 class Sprite(pygame.sprite.Sprite):
     def __init__(self, group):
@@ -25,13 +35,12 @@ class Ship(Sprite):
         self.center = float(self.rect.centerx)
         self.moving_right = False
         self.moving_left = False
-        self.speed = 1
 
     def update(self):
         if self.moving_right and self.rect.right < self.screen_rect.right:
-            self.center += self.speed
+            self.center += ship_speed
         if self.moving_left and self.rect.left > self.screen_rect.left:
-            self.center -= self.speed
+            self.center -= ship_speed
         self.rect.centerx = self.center
 
 
@@ -47,10 +56,9 @@ class Bullet(Sprite):
         self.rect.centerx = ship.rect.centerx
         self.rect.top = ship.rect.top
         self.y = float(self.rect.y)
-        self.speed = 1
 
     def update(self):
-        self.y -= self.speed
+        self.y -= bullet_speed
         self.rect.y = self.y
 
     def draw_bullet(self):
@@ -60,13 +68,25 @@ class Bullet(Sprite):
 class Ufo(Sprite):
     '''летающая тарелка'''
 
-    def __init__(self):
+    def __init__(self, screen):
         super().__init__(ufo_group)
         self.image = load_image('ufo.png', -1)
         self.rect = self.image.get_rect()
         self.rect.x = self.rect.width
         self.rect.y = self.rect.height
         self.x = float(self.rect.x)
+        self.screen = screen
+
+    def update(self):
+        self.x += (ufo_speed_x * direction)
+        self.rect.x = self.x
+
+    def check(self):
+        screen_rect = self.screen.get_rect()
+        if self.rect.right >= screen_rect.right:
+            return True
+        elif self.rect.left <= 0:
+            return True
 
 
 def load_image(name, colorkey=None):
@@ -85,23 +105,32 @@ def load_image(name, colorkey=None):
     return image
 
 
-def create_fleet(screen, ufo_group):
+def create_fleet():
     space_left_x = width - 2 * ufo_width
     num_of_ufo_x = int(space_left_x / (2 * ufo_width))
     num_of_ufo_y = 6
     for j in range(num_of_ufo_y):
         for i in range(num_of_ufo_x):
-            ufo = Ufo()
+            ufo = Ufo(screen)
             ufo.x = ufo_width + 2 * ufo_width * i
             ufo.rect.x = ufo.x
             ufo.rect.y = ufo_height + 2.5 * ufo_height * j
 
 
+def change_direction():
+    global direction
+    for ufo in ufo_group:
+        ufo.rect.y += ufo_speed_y
+    direction *= -1
+
+
+def check_fleet():
+    for ufo in ufo_group.sprites():
+        if ufo.check():
+            change_direction()
+            break
+
 pygame.init()
-width = 1000
-height = 600
-ufo_width = 50
-ufo_height = 26
 fps = 60
 background_color = (230, 230, 230)
 screen = pygame.display.set_mode((width, height))
@@ -110,7 +139,7 @@ ship_group = pygame.sprite.Group()
 ufo_group = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 ship = Ship(screen)
-create_fleet(screen, ufo_group)
+create_fleet()
 pygame.display.set_caption('')
 running = True
 while running:
@@ -136,6 +165,8 @@ while running:
     ufo_group.draw(screen)
     ship.update()
     bullets.update()
+    check_fleet()
+    ufo_group.update()
     for bullet in bullets.copy():
         if bullet.rect.bottom <= 0:
             bullets.remove(bullet)
