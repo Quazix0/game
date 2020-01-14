@@ -60,6 +60,10 @@ class Bullet(Sprite):
     def update(self):
         self.y -= bullet_speed
         self.rect.y = self.y
+        collisions = pygame.sprite.groupcollide(bullets, ufo_group, True, True)
+        if len(ufo_group) == 0:
+            bullets.empty()
+            create_fleet()
 
     def draw_bullet(self):
         pygame.draw.rect(self.screen, self.color, self.rect)
@@ -129,7 +133,6 @@ def check_fleet():
         if ufo.check():
             change_direction()
             break
-
 pygame.init()
 fps = 60
 background_color = (230, 230, 230)
