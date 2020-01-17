@@ -1,15 +1,17 @@
 import os
 import pygame
+from time import sleep
 
 width = 1000
 height = 700
 ufo_width = 50
 ufo_height = 26
-ship_speed = 1
-bullet_speed = 2
-ufo_speed_x = 0.75
-ufo_speed_y = 10
+ship_speed = 4
+bullet_speed = 7
+ufo_speed_x = 3
+ufo_speed_y = 11
 direction = 1
+lifes = 3
 
 
 class Sprite(pygame.sprite.Sprite):
@@ -42,6 +44,9 @@ class Ship(Sprite):
         if self.moving_left and self.rect.left > self.screen_rect.left:
             self.center -= ship_speed
         self.rect.centerx = self.center
+
+    def center_ship(self):
+        self.center = self.screen_rect.centerx
 
 
 class Bullet(Sprite):
@@ -84,6 +89,8 @@ class Ufo(Sprite):
     def update(self):
         self.x += (ufo_speed_x * direction)
         self.rect.x = self.x
+        if pygame.sprite.spritecollideany(ship, ufo_group):
+            ship_damaged()
 
     def check(self):
         screen_rect = self.screen.get_rect()
@@ -133,11 +140,53 @@ def check_fleet():
         if ufo.check():
             change_direction()
             break
+
+
+def ship_damaged():
+    global lifes
+    global running
+    if lifes > 0:
+        lifes -= 1
+        ufo_group.empty()
+        bullets.empty()
+        create_fleet()
+        ship.center_ship()
+        sleep(0.5)
+    else:
+        running = False
+
+
+def check_bottom(screen):
+    screen_rect = screen.get_rect()
+    for ufo in ufo_group.sprites():
+        if ufo.rect.bottom >= screen_rect.bottom:
+            ship_damaged()
+            break
+
+
+def start_screen():
+    intro_text = []
+    fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 30)
+    text_coord = 50
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color('black'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+
+
 pygame.init()
-fps = 60
+fps = 30
+clock = pygame.time.Clock()
 background_color = (230, 230, 230)
 screen = pygame.display.set_mode((width, height))
 screen.fill(background_color)
+'''start_screen()'''
 ship_group = pygame.sprite.Group()
 ufo_group = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
@@ -174,4 +223,5 @@ while running:
         if bullet.rect.bottom <= 0:
             bullets.remove(bullet)
     pygame.display.flip()
+    clock.tick(fps)
 pygame.quit()
