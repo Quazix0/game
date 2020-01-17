@@ -12,6 +12,8 @@ ufo_speed_x = 3
 ufo_speed_y = 11
 direction = 1
 lifes = 3
+score = 0
+ufo_points = 50
 
 
 class Sprite(pygame.sprite.Sprite):
@@ -21,6 +23,49 @@ class Sprite(pygame.sprite.Sprite):
 
     def get_event(self, event):
         pass
+
+
+class Scoreboard:
+    def __init__(self, screen, score, background_color):
+        self.screen = screen
+        self.screen_rect = screen.get_rect()
+        self.score = score
+        self.text_color = (30, 30, 30)
+        self.background_color = background_color
+        self.font = pygame.font.SysFont(None, 36)
+        self.prep_score()
+
+    def prep_score(self):
+        score_str = str(self.score)
+        self.score_im = self.font.render(score_str, True, self.text_color, self.background_color)
+        self.score_rect = self.score_im.get_rect()
+        self.score_rect.right = self.screen_rect.right - 10
+        self.screen_rect.top = 10
+
+    def show_score(self):
+        self.screen.blit(self.score_im, self.score_rect)
+
+
+class Button():
+    def __init__(self, screen, msg):
+        self.screen = screen
+        self.screen_rect = screen.get_rect()
+        self.width, self.height = 200, 50
+        self.button_color = (255, 0, 0)
+        self.text_color = (255, 255, 255)
+        self.font = pygame.font.SysFont(None, 48)
+        self.rect = pygame.Rect(0, 0, self.width, self.height)
+        self.rect.center = self.screen_rect.center
+        self.prep_msg(msg)
+
+    def prep_msg(self, msg):
+        self.msg_image = self.font.render(msg, True, self.text_color, self.button_color)
+        self.msg_image_rect = self.msg_image.get_rect()
+        self.msg_image_rect.center = self.rect.center
+
+    def draw_button(self):
+        self.screen.fill(self.button_color, self.rect)
+        self.screen.blit(self.msg_image, self.msg_image_rect)
 
 
 class Ship(Sprite):
@@ -66,8 +111,13 @@ class Bullet(Sprite):
         self.y -= bullet_speed
         self.rect.y = self.y
         collisions = pygame.sprite.groupcollide(bullets, ufo_group, True, True)
+        if collisions:
+            for ufos in collisions.values():
+                update_score(ufos, ufo_points)
+
         if len(ufo_group) == 0:
             bullets.empty()
+            speed_up()
             create_fleet()
 
     def draw_bullet(self):
@@ -144,7 +194,7 @@ def check_fleet():
 
 def ship_damaged():
     global lifes
-    global running
+    global game_running
     if lifes > 0:
         lifes -= 1
         ufo_group.empty()
@@ -153,7 +203,8 @@ def ship_damaged():
         ship.center_ship()
         sleep(0.5)
     else:
-        running = False
+        game_running = False
+        pygame.mouse.set_visible(True)
 
 
 def check_bottom(screen):
@@ -162,6 +213,37 @@ def check_bottom(screen):
         if ufo.rect.bottom >= screen_rect.bottom:
             ship_damaged()
             break
+
+
+def check_play_button(play_button, x, y):
+    global game_running
+    global lifes
+    global ufo_speed_x
+    global score
+    button_clicked = play_button.rect.collidepoint(x, y)
+    if button_clicked and not game_running:
+        pygame.mouse.set_visible(False)
+        game_running = True
+        lifes = 3
+        ufo_group.empty()
+        bullets.empty()
+        create_fleet()
+        ship.center_ship()
+        ufo_speed_x = 3
+        score = 0
+
+
+def speed_up():
+    global ufo_speed_x
+    global ufo_points
+    ufo_speed_x *= 1.1
+    ufo_points += 25
+
+
+def update_score(ufos, ufo_points):
+    global score
+    score += ufo_points * len(ufos)
+    sb.prep_score()
 
 
 def start_screen():
@@ -186,42 +268,53 @@ clock = pygame.time.Clock()
 background_color = (230, 230, 230)
 screen = pygame.display.set_mode((width, height))
 screen.fill(background_color)
-'''start_screen()'''
+start_screen()
 ship_group = pygame.sprite.Group()
 ufo_group = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 ship = Ship(screen)
 create_fleet()
-pygame.display.set_caption('')
+play_button = Button(screen, 'Играть')
+sb = Scoreboard(screen, score, background_color)
+pygame.display.set_caption('Космическая защита')
+game_running = False
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.KEYDOWN:
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            check_play_button(play_button, mouse_x, mouse_y)
+        elif event.type == pygame.KEYDOWN and game_running:
             if event.key == pygame.K_RIGHT:
                 ship.moving_right = True
             elif event.key == pygame.K_LEFT:
                 ship.moving_left = True
             elif event.key == pygame.K_SPACE:
                 bullet = Bullet(screen, ship)
-        elif event.type == pygame.KEYUP:
+        elif event.type == pygame.KEYUP and game_running:
             if event.key == pygame.K_RIGHT:
                 ship.moving_right = False
             elif event.key == pygame.K_LEFT:
                 ship.moving_left = False
-    screen.fill(background_color)
-    for bullet in bullets.sprites():
-        bullet.draw_bullet()
-    ship_group.draw(screen)
-    ufo_group.draw(screen)
-    ship.update()
-    bullets.update()
-    check_fleet()
-    ufo_group.update()
-    for bullet in bullets.copy():
-        if bullet.rect.bottom <= 0:
-            bullets.remove(bullet)
+    if game_running:
+        screen.fill(background_color)
+        sb.show_score()
+        for bullet in bullets.sprites():
+            bullet.draw_bullet()
+        ship_group.draw(screen)
+        ufo_group.draw(screen)
+        ship.update()
+        bullets.update()
+        check_fleet()
+        ufo_group.update()
+        for bullet in bullets.copy():
+            if bullet.rect.bottom <= 0:
+                bullets.remove(bullet)
+    else:
+        start_screen()
+        play_button.draw_button()
     pygame.display.flip()
     clock.tick(fps)
 pygame.quit()
