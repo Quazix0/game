@@ -36,7 +36,7 @@ class Scoreboard:
         self.prep_score()
 
     def prep_score(self):
-        score_str = str(self.score)
+        score_str = str(score)
         self.score_im = self.font.render(score_str, True, self.text_color, self.background_color)
         self.score_rect = self.score_im.get_rect()
         self.score_rect.right = self.screen_rect.right - 10
